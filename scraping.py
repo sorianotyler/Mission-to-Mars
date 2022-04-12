@@ -11,7 +11,8 @@ def scrape_all():
     executable_path = {'executable_path': ChromeDriverManager().install()}
     browser = Browser('chrome', **executable_path, headless=True)
 
-    news_title, news_paragraph = mars_news(browser)
+    news_title,news_paragraph = mars_news(browser)
+    hemispher_data = mars_hemisphers(browser)
 
     # Run all scraping functions and store results in a dictionary
     data = {
@@ -19,8 +20,11 @@ def scrape_all():
         "news_paragraph": news_paragraph,
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
-        "last_modified": dt.datetime.now()
+        "last_modified": dt.datetime.now(),
+        "hemispher_data": hemispher_data
     }
+    
+    
 
     # Stop webdriver and return data
     browser.quit()
@@ -96,6 +100,44 @@ def mars_facts():
 
     # Convert dataframe into HTML format, add bootstrap
     return df.to_html(classes="table table-striped")
+
+def mars_hemisphers(browser):
+    url = 'https://marshemispheres.com/'
+    browser.visit(url)
+
+    # 2. Create a list to hold the images and titles.
+    hemisphere_image_urls = []
+
+    try:
+        # 3. Write code to retrieve the image urls and titles for each hemisphere.
+        html = browser.html
+        img_soup = soup(html, 'html.parser')
+        all_pages_box = img_soup.find_all('a', class_='itemLink product-item')
+
+        list_href = []
+        for link in all_pages_box:
+            curr_link = link.get('href')
+            if(curr_link not in list_href):
+                list_href.append(curr_link)
+
+
+        list_href.pop()
+
+        for link in list_href:
+            page_link = url+link
+            browser.visit(page_link)
+            html = browser.html
+            page_soup = soup(html, 'html.parser')
+            img_link = page_soup.find('img', class_='wide-image').get('src')
+            image_title = page_soup.find('h2', class_='title').text
+            hemisphers = {'img url': img_link,
+                            'title': image_title}
+            hemisphere_image_urls.append(hemisphers)
+    
+    except AttributeError:
+        return None
+    
+    return hemisphers
 
 if __name__ == "__main__":
 

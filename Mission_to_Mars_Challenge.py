@@ -134,15 +134,23 @@ for link in all_pages_box:
 list_href.pop()
 
 for link in list_href:
-    page_link = url+link
-    browser.visit(page_link)
-    html = browser.html
-    page_soup = soup(html, 'html.parser')
-    img_link = page_soup.find('img', class_='wide-image').get('src')
-    image_title = page_soup.find('h2', class_='title').text
-    hemisphers = {'img url': img_link,
-                     'title': image_title}
-    hemisphere_image_urls.append(hemisphers)
+        page_link = url+link
+        browser.visit(page_link)
+        html = browser.html
+        
+        
+        page_soup = soup(html, 'html.parser')
+        img_pages = page_soup.find_all("a", {"target":"_blank"})[2].get('href')
+
+        img_page_link = url+img_pages
+        browser.visit(img_page_link)
+        html_img = browser.html
+        img_soup = soup(html_img,'html.parser')
+        img_link = img_soup.find('img').get('src')
+        image_title = page_soup.find('h2', class_='title').text
+        hemisphers = {'img_url': img_link,
+                        'title': image_title}
+        hemisphere_image_urls.append(hemisphers)
 
 # 4. Print the list that holds the dictionary of each image url and title.
 hemisphere_image_urls

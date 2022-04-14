@@ -12,7 +12,7 @@ def scrape_all():
     browser = Browser('chrome', **executable_path, headless=True)
 
     news_title,news_paragraph = mars_news(browser)
-    hemispher_data = mars_hemisphers(browser)
+    hemispheres = mars_hemispheres(browser)
 
     # Run all scraping functions and store results in a dictionary
     data = {
@@ -21,11 +21,9 @@ def scrape_all():
         "featured_image": featured_image(browser),
         "facts": mars_facts(),
         "last_modified": dt.datetime.now(),
-        "hemispher_data": hemispher_data
+        "hemispheres": hemispheres
     }
     
-    
-
     # Stop webdriver and return data
     browser.quit()
     return data
@@ -61,7 +59,7 @@ def mars_news(browser):
 
 def featured_image(browser):
     # Visit URL
-    url = 'https://data-class-jpl-space.s3.amazonaws.com/JPL_Space/index.html'
+    url = 'https://spaceimages-mars.com'
     browser.visit(url)
 
     # Find and click the full image button
@@ -76,13 +74,12 @@ def featured_image(browser):
     try:
         # Find the relative image url
         img_url_rel = img_soup.find('img', class_='fancybox-image').get('src')
+        # Use the base url to create an absolute url
 
     except AttributeError:
         return None
 
-    # Use the base url to create an absolute url
     img_url = f'https://data-class-jpl-space.s3.amazonaws.com/JPL_Space/{img_url_rel}'
-
     return img_url
 
 def mars_facts():
@@ -101,43 +98,47 @@ def mars_facts():
     # Convert dataframe into HTML format, add bootstrap
     return df.to_html(classes="table table-striped")
 
-def mars_hemisphers(browser):
+def mars_hemispheres(browser):
     url = 'https://marshemispheres.com/'
     browser.visit(url)
 
     # 2. Create a list to hold the images and titles.
     hemisphere_image_urls = []
 
-    try:
-        # 3. Write code to retrieve the image urls and titles for each hemisphere.
+    # 3. Write code to retrieve the image urls and titles for each hemisphere.
+    html = browser.html
+    img_soup = soup(html, 'html.parser')
+    all_pages_box = img_soup.find_all('a', class_='itemLink product-item')
+
+    list_href = []
+    for link in all_pages_box:
+        curr_link = link.get('href')
+        if(curr_link not in list_href):
+            list_href.append(curr_link)
+        
+    
+    list_href.pop()
+
+    for link in list_href:
+        page_link = url+link
+        browser.visit(page_link)
         html = browser.html
-        img_soup = soup(html, 'html.parser')
-        all_pages_box = img_soup.find_all('a', class_='itemLink product-item')
+        
+        
+        page_soup = soup(html, 'html.parser')
+        img_pages = page_soup.find_all("a", {"target":"_blank"})[2].get('href')
 
-        list_href = []
-        for link in all_pages_box:
-            curr_link = link.get('href')
-            if(curr_link not in list_href):
-                list_href.append(curr_link)
-
-
-        list_href.pop()
-
-        for link in list_href:
-            page_link = url+link
-            browser.visit(page_link)
-            html = browser.html
-            page_soup = soup(html, 'html.parser')
-            img_link = page_soup.find('img', class_='wide-image').get('src')
-            image_title = page_soup.find('h2', class_='title').text
-            hemisphers = {'img url': img_link,
-                            'title': image_title}
-            hemisphere_image_urls.append(hemisphers)
-    
-    except AttributeError:
-        return None
-    
-    return hemisphers
+        img_page_link = url+img_pages
+        browser.visit(img_page_link)
+        html_img = browser.html
+        img_soup = soup(html_img,'html.parser')
+        img_link = img_soup.find('img').get('src')
+        image_title = page_soup.find('h2', class_='title').text
+        hemisphers = {'img_url': img_link,
+                        'title': image_title}
+        hemisphere_image_urls.append(hemisphers)
+        
+    return hemisphere_image_urls
 
 if __name__ == "__main__":
 
